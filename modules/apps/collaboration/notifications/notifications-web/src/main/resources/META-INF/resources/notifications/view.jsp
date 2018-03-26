@@ -184,9 +184,7 @@ navigationURL.setParameter(SearchContainer.DEFAULT_CUR_PARAM, "0");
 									var markAsReadURL = notificationContainer.one('a').attr('href');
 
 									A.io.request(markAsReadURL);
-
 									notificationContainer.remove();
-									location.reload(true);
 								}
 							}
 							else {
