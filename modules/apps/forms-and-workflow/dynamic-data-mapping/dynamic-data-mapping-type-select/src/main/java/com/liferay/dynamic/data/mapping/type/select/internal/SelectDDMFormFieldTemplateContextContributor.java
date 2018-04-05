@@ -14,6 +14,7 @@
 
 package com.liferay.dynamic.data.mapping.type.select.internal;
 
+import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormFieldEvaluationResult;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldOptionsFactory;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTemplateContextContributor;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -66,7 +67,9 @@ public class SelectDDMFormFieldTemplateContextContributor
 			"dataSourceType",
 			GetterUtil.getString(
 				ddmFormField.getProperty("dataSourceType"), "manual"));
-		parameters.put("multiple", ddmFormField.isMultiple());
+		parameters.put(
+			"multiple",
+			getMultiple(ddmFormField, ddmFormFieldRenderingContext));
 
 		DDMFormFieldOptions ddmFormFieldOptions =
 			ddmFormFieldOptionsFactory.create(
@@ -97,20 +100,40 @@ public class SelectDDMFormFieldTemplateContextContributor
 
 		parameters.put("strings", stringsMap);
 
-		List<String> value = getValue(
-			GetterUtil.getString(
-				ddmFormFieldRenderingContext.getValue(), "[]"));
+		List<String> predefinedValue = getValue(
+			getPredefinedValue(ddmFormField, ddmFormFieldRenderingContext));
 
-		if (value.isEmpty()) {
-			value = getValue(
-				GetterUtil.getString(
-					ddmFormFieldRenderingContext.getProperty("predefinedValue"),
-					"[]"));
+		if (predefinedValue != null) {
+			parameters.put("predefinedValue", predefinedValue);
 		}
 
-		parameters.put("value", value);
+		parameters.put(
+			"value",
+			getValue(
+				GetterUtil.getString(
+					ddmFormFieldRenderingContext.getValue(), "[]")));
 
 		return parameters;
+	}
+
+	protected boolean getMultiple(
+		DDMFormField ddmFormField,
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
+
+		DDMFormFieldEvaluationResult ddmFormFieldEvaluationResult =
+			(DDMFormFieldEvaluationResult)ddmFormFieldRenderingContext.
+				getProperty("ddmFormFieldEvaluationResult");
+
+		if (ddmFormFieldEvaluationResult != null) {
+			Boolean multiple = ddmFormFieldEvaluationResult.getProperty(
+				"multiple");
+
+			if (multiple != null) {
+				return multiple;
+			}
+		}
+
+		return ddmFormField.isMultiple();
 	}
 
 	protected List<Object> getOptions(
@@ -132,6 +155,20 @@ public class SelectDDMFormFieldTemplateContextContributor
 		}
 
 		return options;
+	}
+
+	protected String getPredefinedValue(
+		DDMFormField ddmFormField,
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
+
+		LocalizedValue predefinedValue = ddmFormField.getPredefinedValue();
+
+		if (predefinedValue == null) {
+			return null;
+		}
+
+		return predefinedValue.getString(
+			ddmFormFieldRenderingContext.getLocale());
 	}
 
 	protected ResourceBundle getResourceBundle(Locale locale) {

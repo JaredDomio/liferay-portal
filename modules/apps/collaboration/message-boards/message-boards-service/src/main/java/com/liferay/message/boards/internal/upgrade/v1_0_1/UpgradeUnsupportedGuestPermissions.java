@@ -14,8 +14,10 @@
 
 package com.liferay.message.boards.internal.upgrade.v1_0_1;
 
-import com.liferay.message.boards.kernel.model.MBCategory;
-import com.liferay.message.boards.kernel.model.MBMessage;
+import com.liferay.message.boards.constants.MBConstants;
+import com.liferay.message.boards.model.MBCategory;
+import com.liferay.message.boards.model.MBMessage;
+import com.liferay.message.boards.model.MBThread;
 import com.liferay.portal.kernel.dao.db.DBProcessContext;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
@@ -30,7 +32,6 @@ import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
-import com.liferay.portlet.messageboards.service.permission.MBPermission;
 
 /**
  * @author Alejandro Tardín
@@ -57,13 +58,16 @@ public class UpgradeUnsupportedGuestPermissions implements UpgradeStep {
 		_removeResourceActions(
 			MBCategory.class.getName(), ActionKeys.PERMISSIONS);
 
+		_removeResourceActions(MBMessage.class.getName(), ActionKeys.DELETE);
 		_removeResourceActions(
 			MBMessage.class.getName(), ActionKeys.PERMISSIONS);
 
 		_removeResourceActions(
-			MBPermission.RESOURCE_NAME, ActionKeys.LOCK_THREAD);
+			MBConstants.RESOURCE_NAME, ActionKeys.LOCK_THREAD);
 		_removeResourceActions(
-			MBPermission.RESOURCE_NAME, ActionKeys.MOVE_THREAD);
+			MBConstants.RESOURCE_NAME, ActionKeys.MOVE_THREAD);
+
+		_removeResourceActions(MBThread.class.getName(), ActionKeys.DELETE);
 	}
 
 	private void _removeResourceAction(
@@ -94,8 +98,12 @@ public class UpgradeUnsupportedGuestPermissions implements UpgradeStep {
 
 		try {
 			ResourceAction resourceAction =
-				_resourceActionLocalService.getResourceAction(
+				_resourceActionLocalService.fetchResourceAction(
 					resourceName, actionId);
+
+			if (resourceAction == null) {
+				return;
+			}
 
 			ActionableDynamicQuery actionableDynamicQuery =
 				_resourcePermissionLocalService.getActionableDynamicQuery();

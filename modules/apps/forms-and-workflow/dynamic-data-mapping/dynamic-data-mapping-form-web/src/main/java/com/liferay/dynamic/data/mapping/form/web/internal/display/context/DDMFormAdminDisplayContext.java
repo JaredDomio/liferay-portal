@@ -15,14 +15,15 @@
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
 
 import com.liferay.dynamic.data.mapping.constants.DDMActionKeys;
+import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
 import com.liferay.dynamic.data.mapping.form.web.configuration.DDMFormWebConfiguration;
-import com.liferay.dynamic.data.mapping.form.web.internal.constants.DDMFormPortletKeys;
 import com.liferay.dynamic.data.mapping.form.web.internal.constants.DDMFormWebKeys;
 import com.liferay.dynamic.data.mapping.form.web.internal.display.context.util.DDMFormAdminRequestHelper;
+import com.liferay.dynamic.data.mapping.form.web.internal.instance.lifecycle.AddDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 import com.liferay.dynamic.data.mapping.form.web.internal.search.FormInstanceSearch;
 import com.liferay.dynamic.data.mapping.io.DDMFormFieldTypesJSONSerializer;
 import com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance;
@@ -43,15 +44,18 @@ import com.liferay.dynamic.data.mapping.util.DDMFormValuesMerger;
 import com.liferay.dynamic.data.mapping.util.comparator.DDMFormInstanceCreateDateComparator;
 import com.liferay.dynamic.data.mapping.util.comparator.DDMFormInstanceModifiedDateComparator;
 import com.liferay.dynamic.data.mapping.util.comparator.DDMFormInstanceNameComparator;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemList;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -68,7 +72,6 @@ import com.liferay.portal.kernel.util.ResourceBundleLoader;
 import com.liferay.portal.kernel.util.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowEngineManager;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
@@ -85,9 +88,6 @@ import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -97,6 +97,8 @@ public class DDMFormAdminDisplayContext {
 
 	public DDMFormAdminDisplayContext(
 		RenderRequest renderRequest, RenderResponse renderResponse,
+		AddDefaultSharedFormLayoutPortalInstanceLifecycleListener
+			addDefaultSharedFormLayoutPortalInstanceLifecycleListener,
 		DDMFormWebConfiguration formWebConfiguration,
 		DDMFormInstanceRecordLocalService formInstanceRecordLocalService,
 		DDMFormInstanceService formInstanceService,
@@ -111,6 +113,8 @@ public class DDMFormAdminDisplayContext {
 
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
+		_addDefaultSharedFormLayoutPortalInstanceLifecycleListener =
+			addDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 		_ddmFormWebConfiguration = formWebConfiguration;
 		_ddmFormInstanceRecordLocalService = formInstanceRecordLocalService;
 		_ddmFormInstanceService = formInstanceService;
@@ -263,11 +267,8 @@ public class DDMFormAdminDisplayContext {
 		DDMFormInstance formInstance = getDDMFormInstance();
 
 		if (formInstance != null) {
-			ThemeDisplay themeDisplay =
-				formAdminRequestHelper.getThemeDisplay();
-
 			return LocalizationUtil.getLocalization(
-				formInstance.getDescription(), themeDisplay.getLanguageId());
+				formInstance.getDescription(), getFormDefaultLanguageId());
 		}
 
 		return getJSONObjectLocalizedPropertyFromRequest("description");
@@ -318,11 +319,8 @@ public class DDMFormAdminDisplayContext {
 		DDMFormInstance formInstance = getDDMFormInstance();
 
 		if (formInstance != null) {
-			ThemeDisplay themeDisplay =
-				formAdminRequestHelper.getThemeDisplay();
-
 			return LocalizationUtil.getLocalization(
-				formInstance.getName(), themeDisplay.getLanguageId());
+				formInstance.getName(), getFormDefaultLanguageId());
 		}
 
 		return getJSONObjectLocalizedPropertyFromRequest("name");
@@ -386,6 +384,36 @@ public class DDMFormAdminDisplayContext {
 		return sb.toString();
 	}
 
+	public List<NavigationItem> getNavigationItems() {
+		HttpServletRequest request = PortalUtil.getHttpServletRequest(
+			_renderRequest);
+
+		String currentTab = ParamUtil.getString(request, "currentTab", "forms");
+
+		return new NavigationItemList() {
+			{
+				add(
+					navigationItem -> {
+						navigationItem.setActive(currentTab.equals("forms"));
+						navigationItem.setHref(
+							getPortletURL(), "currentTab", "forms");
+						navigationItem.setLabel(
+							LanguageUtil.get(request, "forms"));
+					});
+
+				add(
+					navigationItem -> {
+						navigationItem.setActive(
+							currentTab.equals("element-set"));
+						navigationItem.setHref(
+							getPortletURL(), "currentTab", "element-set");
+						navigationItem.setLabel(
+							LanguageUtil.get(request, "element-sets"));
+					});
+			}
+		};
+	}
+
 	public String getOrderByCol() {
 		return ParamUtil.getString(_renderRequest, "orderByCol", "create-date");
 	}
@@ -406,16 +434,6 @@ public class DDMFormAdminDisplayContext {
 		portletURL.setParameter("currentTab", "forms");
 
 		return portletURL;
-	}
-
-	public String getPreviewFormURL() throws PortalException {
-		String publishedFormURL = getPublishedFormURL();
-
-		if (Validator.isNull(publishedFormURL)) {
-			return StringPool.BLANK;
-		}
-
-		return publishedFormURL.concat("/preview");
 	}
 
 	public String getPublishedFormURL() throws PortalException {
@@ -460,7 +478,8 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public String getRestrictedFormURL() {
-		return getFormLayoutURL(true);
+		return _addDefaultSharedFormLayoutPortalInstanceLifecycleListener.
+			getFormLayoutURL(formAdminRequestHelper.getThemeDisplay(), true);
 	}
 
 	public long getScopeGroupId() {
@@ -505,7 +524,8 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public String getSharedFormURL() {
-		return getFormLayoutURL(false);
+		return _addDefaultSharedFormLayoutPortalInstanceLifecycleListener.
+			getFormLayoutURL(formAdminRequestHelper.getThemeDisplay(), false);
 	}
 
 	public DDMStructureService getStructureService() {
@@ -570,31 +590,41 @@ public class DDMFormAdminDisplayContext {
 		return isShowAddButton();
 	}
 
-	public boolean isShowCopyURLFormInstanceIcon(DDMFormInstance formInstance) {
+	public boolean isShowCopyURLFormInstanceIcon(DDMFormInstance formInstance)
+		throws PortalException {
+
 		return DDMFormInstancePermission.contains(
 			formAdminRequestHelper.getPermissionChecker(), formInstance,
 			ActionKeys.VIEW);
 	}
 
-	public boolean isShowDeleteFormInstanceIcon(DDMFormInstance formInstance) {
+	public boolean isShowDeleteFormInstanceIcon(DDMFormInstance formInstance)
+		throws PortalException {
+
 		return DDMFormInstancePermission.contains(
 			formAdminRequestHelper.getPermissionChecker(), formInstance,
 			ActionKeys.DELETE);
 	}
 
-	public boolean isShowEditFormInstanceIcon(DDMFormInstance formInstance) {
+	public boolean isShowEditFormInstanceIcon(DDMFormInstance formInstance)
+		throws PortalException {
+
 		return DDMFormInstancePermission.contains(
 			formAdminRequestHelper.getPermissionChecker(), formInstance,
 			ActionKeys.UPDATE);
 	}
 
-	public boolean isShowExportFormInstanceIcon(DDMFormInstance formInstance) {
+	public boolean isShowExportFormInstanceIcon(DDMFormInstance formInstance)
+		throws PortalException {
+
 		return DDMFormInstancePermission.contains(
 			formAdminRequestHelper.getPermissionChecker(), formInstance,
 			ActionKeys.VIEW);
 	}
 
-	public boolean isShowPermissionsIcon(DDMFormInstance formInstance) {
+	public boolean isShowPermissionsIcon(DDMFormInstance formInstance)
+		throws PortalException {
+
 		return DDMFormInstancePermission.contains(
 			formAdminRequestHelper.getPermissionChecker(), formInstance,
 			ActionKeys.PERMISSIONS);
@@ -613,7 +643,8 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public boolean isShowViewEntriesFormInstanceIcon(
-		DDMFormInstance formInstance) {
+			DDMFormInstance formInstance)
+		throws PortalException {
 
 		return DDMFormInstancePermission.contains(
 			formAdminRequestHelper.getPermissionChecker(), formInstance,
@@ -692,13 +723,13 @@ public class DDMFormAdminDisplayContext {
 
 		if (Validator.isNull(displayStyle)) {
 			displayStyle = portalPreferences.getValue(
-				DDMFormPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
-				"display-style", formWebConfiguration.defaultDisplayView());
+				DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN, "display-style",
+				formWebConfiguration.defaultDisplayView());
 		}
 		else if (ArrayUtil.contains(displayViews, displayStyle)) {
 			portalPreferences.setValue(
-				DDMFormPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
-				"display-style", displayStyle);
+				DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN, "display-style",
+				displayStyle);
 		}
 
 		if (!ArrayUtil.contains(displayViews, displayStyle)) {
@@ -800,21 +831,6 @@ public class DDMFormAdminDisplayContext {
 		}
 	}
 
-	protected String getFormLayoutURL(boolean privateLayout) {
-		StringBundler sb = new StringBundler(3);
-
-		ThemeDisplay themeDisplay = formAdminRequestHelper.getThemeDisplay();
-
-		Group group = themeDisplay.getSiteGroup();
-
-		sb.append(themeDisplay.getPortalURL());
-		sb.append(group.getPathFriendlyURL(privateLayout, themeDisplay));
-
-		sb.append("/forms/shared/-/form/");
-
-		return sb.toString();
-	}
-
 	protected String getJSONObjectLocalizedPropertyFromRequest(
 		String propertyName) {
 
@@ -855,14 +871,6 @@ public class DDMFormAdminDisplayContext {
 		return ParamUtil.getString(_renderRequest, "keywords");
 	}
 
-	protected String getServletContextPath(Servlet servlet) {
-		ServletConfig servletConfig = servlet.getServletConfig();
-
-		ServletContext servletContext = servletConfig.getServletContext();
-
-		return servletContext.getContextPath();
-	}
-
 	protected Locale getSiteDefaultLocale() {
 		ThemeDisplay themeDisplay = formAdminRequestHelper.getThemeDisplay();
 
@@ -889,22 +897,6 @@ public class DDMFormAdminDisplayContext {
 		}
 
 		return false;
-	}
-
-	protected String serialize(
-		List<DDMDataProviderInstance> dataProviderInstances, Locale locale) {
-
-		JSONArray jsonArray = _jsonFactory.createJSONArray();
-
-		for (DDMDataProviderInstance dataProviderInstance :
-				dataProviderInstances) {
-
-			JSONObject jsonObject = toJSONObject(dataProviderInstance, locale);
-
-			jsonArray.put(jsonObject);
-		}
-
-		return jsonArray.toString();
 	}
 
 	protected void setDDMFormInstanceSearchResults(
@@ -948,6 +940,8 @@ public class DDMFormAdminDisplayContext {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormAdminDisplayContext.class);
 
+	private final AddDefaultSharedFormLayoutPortalInstanceLifecycleListener
+		_addDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 	private final DDMFormFieldTypeServicesTracker
 		_ddmFormFieldTypeServicesTracker;
 	private final DDMFormFieldTypesJSONSerializer

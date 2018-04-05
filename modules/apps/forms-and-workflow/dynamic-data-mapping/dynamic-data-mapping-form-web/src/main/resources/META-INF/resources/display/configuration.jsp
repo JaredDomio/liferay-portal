@@ -51,7 +51,10 @@ DDMFormInstance selFormInstance = DDMFormInstanceServiceUtil.fetchFormInstance(f
 					total="<%= DDMFormInstanceServiceUtil.searchCount(company.getCompanyId(), scopeGroupId, keywords) %>"
 				>
 					<div class="form-search input-append">
-						<liferay-ui:input-search autoFocus="<%= true %>" placeholder='<%= LanguageUtil.get(request, "keywords") %>' />
+						<liferay-ui:input-search
+							autoFocus="<%= true %>"
+							placeholder='<%= LanguageUtil.get(request, "keywords") %>'
+						/>
 					</div>
 
 					<liferay-ui:search-container-results
@@ -122,7 +125,7 @@ DDMFormInstance selFormInstance = DDMFormInstanceServiceUtil.fetchFormInstance(f
 	<aui:input name="preferences--formInstanceId--" type="hidden" value="<%= formInstanceId %>" />
 
 	<aui:button-row>
-		<aui:button cssClass="btn-lg" type="submit" />
+		<aui:button type="submit" />
 	</aui:button-row>
 </aui:form>
 

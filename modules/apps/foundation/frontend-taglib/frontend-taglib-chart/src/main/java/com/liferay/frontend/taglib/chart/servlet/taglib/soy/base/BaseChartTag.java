@@ -16,17 +16,20 @@ package com.liferay.frontend.taglib.chart.servlet.taglib.soy.base;
 
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.frontend.taglib.chart.internal.js.loader.modules.extender.npm.NPMResolverProvider;
+import com.liferay.frontend.taglib.chart.model.ChartConfig;
 import com.liferay.frontend.taglib.soy.servlet.taglib.TemplateRendererTag;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.servlet.taglib.util.OutputData;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.io.IOException;
 
 import java.net.URL;
+
+import java.util.Map;
 
 import javax.servlet.ServletRequest;
 
@@ -64,12 +67,10 @@ public abstract class BaseChartTag extends TemplateRendererTag {
 			"clay-charts/lib/" + _moduleBaseName);
 	}
 
-	public void setColumns(Object columns) {
-		putValue("columns", columns);
-	}
-
-	public void setGroups(Object groups) {
-		putValue("groups", groups);
+	public void setConfig(ChartConfig chartConfig) {
+		for (Map.Entry<String, Object> entry : chartConfig.entrySet()) {
+			putValue(entry.getKey(), entry.getValue());
+		}
 	}
 
 	public void setId(String id) {

@@ -14,9 +14,11 @@
 
 package com.liferay.dynamic.data.mapping.type.select.internal;
 
+import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormFieldEvaluationResult;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldOptionsFactory;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
 import com.liferay.dynamic.data.mapping.type.BaseDDMFormFieldTypeSettingsTestCase;
 import com.liferay.portal.json.JSONFactoryImpl;
@@ -60,6 +62,76 @@ public class SelectDDMFormFieldTemplateContextContributorTest
 		super.setUp();
 
 		setUpJSONFactory();
+	}
+
+	@Test
+	public void testGetMultiple1() {
+		String fieldName = "field";
+
+		DDMFormField ddmFormField = new DDMFormField(fieldName, "select");
+
+		ddmFormField.setProperty("multiple", "true");
+
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
+			new DDMFormFieldRenderingContext();
+
+		ddmFormFieldRenderingContext.setProperty(
+			"ddmFormFieldEvaluationResult", null);
+
+		Assert.assertEquals(
+			true,
+			_selectDDMFormFieldTemplateContextContributor.getMultiple(
+				ddmFormField, ddmFormFieldRenderingContext));
+	}
+
+	@Test
+	public void testGetMultiple2() {
+		String fieldName = "field";
+		String fieldInstance = "field_instance";
+
+		DDMFormField ddmFormField = new DDMFormField(fieldName, "select");
+
+		ddmFormField.setProperty("multiple", "true");
+
+		DDMFormFieldEvaluationResult ddmFormFieldEvaluationResult =
+			new DDMFormFieldEvaluationResult(fieldName, fieldInstance);
+
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
+			new DDMFormFieldRenderingContext();
+
+		ddmFormFieldRenderingContext.setProperty(
+			"ddmFormFieldEvaluationResult", ddmFormFieldEvaluationResult);
+
+		Assert.assertEquals(
+			true,
+			_selectDDMFormFieldTemplateContextContributor.getMultiple(
+				ddmFormField, ddmFormFieldRenderingContext));
+	}
+
+	@Test
+	public void testGetMultiple3() {
+		String fieldName = "field";
+		String fieldInstance = "field_instance";
+
+		DDMFormField ddmFormField = new DDMFormField(fieldName, "select");
+
+		ddmFormField.setProperty("multiple", "false");
+
+		DDMFormFieldEvaluationResult ddmFormFieldEvaluationResult =
+			new DDMFormFieldEvaluationResult(fieldName, fieldInstance);
+
+		ddmFormFieldEvaluationResult.setProperty("multiple", true);
+
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
+			new DDMFormFieldRenderingContext();
+
+		ddmFormFieldRenderingContext.setProperty(
+			"ddmFormFieldEvaluationResult", ddmFormFieldEvaluationResult);
+
+		Assert.assertEquals(
+			true,
+			_selectDDMFormFieldTemplateContextContributor.getMultiple(
+				ddmFormField, ddmFormFieldRenderingContext));
 	}
 
 	@Test
@@ -128,7 +200,7 @@ public class SelectDDMFormFieldTemplateContextContributorTest
 		List<String> value = (List<String>)parameters.get("value");
 
 		Assert.assertEquals(value.toString(), 1, value.size());
-		Assert.assertTrue(value.contains("value 1"));
+		Assert.assertTrue(value.toString(), value.contains("value 1"));
 	}
 
 	@Test
@@ -142,8 +214,13 @@ public class SelectDDMFormFieldTemplateContextContributorTest
 			new DDMFormFieldRenderingContext();
 
 		ddmFormFieldRenderingContext.setLocale(LocaleUtil.US);
-		ddmFormFieldRenderingContext.setProperty(
-			"predefinedValue", "[\"value 2\",\"value 3\"]");
+
+		LocalizedValue predefinedValue = new LocalizedValue();
+
+		predefinedValue.setDefaultLocale(LocaleUtil.US);
+		predefinedValue.addString(LocaleUtil.US, "[\"value 2\",\"value 3\"]");
+
+		ddmFormField.setPredefinedValue(predefinedValue);
 
 		setUpDDMFormFieldOptionsFactory(
 			ddmFormField, ddmFormFieldRenderingContext);
@@ -180,11 +257,18 @@ public class SelectDDMFormFieldTemplateContextContributorTest
 		Assert.assertEquals("Label 3", optionMap.get("label"));
 		Assert.assertEquals("value 3", optionMap.get("value"));
 
-		List<String> value = (List<String>)parameters.get("value");
+		List<String> predefinedValueParameter = (List<String>)parameters.get(
+			"predefinedValue");
 
-		Assert.assertEquals(value.toString(), 2, value.size());
-		Assert.assertTrue(value.contains("value 2"));
-		Assert.assertTrue(value.contains("value 3"));
+		Assert.assertEquals(
+			predefinedValueParameter.toString(), 2,
+			predefinedValueParameter.size());
+		Assert.assertTrue(
+			predefinedValueParameter.toString(),
+			predefinedValueParameter.contains("value 2"));
+		Assert.assertTrue(
+			predefinedValueParameter.toString(),
+			predefinedValueParameter.contains("value 3"));
 	}
 
 	@Test
@@ -193,8 +277,8 @@ public class SelectDDMFormFieldTemplateContextContributorTest
 			_selectDDMFormFieldTemplateContextContributor.getValue(
 				"[\"a\",\"b\"]");
 
-		Assert.assertTrue(values.contains("a"));
-		Assert.assertTrue(values.contains("b"));
+		Assert.assertTrue(values.toString(), values.contains("a"));
+		Assert.assertTrue(values.toString(), values.contains("b"));
 	}
 
 	@Test
@@ -203,7 +287,7 @@ public class SelectDDMFormFieldTemplateContextContributorTest
 			_selectDDMFormFieldTemplateContextContributor.getValue(
 				"INVALID_JSON");
 
-		Assert.assertTrue(values.isEmpty());
+		Assert.assertTrue(values.toString(), values.isEmpty());
 	}
 
 	protected DDMFormFieldOptions createDDMFormFieldOptions() {

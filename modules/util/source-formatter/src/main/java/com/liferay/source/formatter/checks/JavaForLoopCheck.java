@@ -14,8 +14,8 @@
 
 package com.liferay.source.formatter.checks;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.ToolsUtil;
 import com.liferay.source.formatter.parser.JavaTerm;
@@ -33,10 +33,6 @@ public class JavaForLoopCheck extends BaseJavaTermCheck {
 	protected String doProcess(
 		String fileName, String absolutePath, JavaTerm javaTerm,
 		String fileContent) {
-
-		if (isSubrepository() || isReadOnly(absolutePath)) {
-			return javaTerm.getContent();
-		}
 
 		String javaTermContent = _formatForLoop(
 			javaTerm.getContent(), _arrayPattern);

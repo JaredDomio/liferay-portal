@@ -30,7 +30,14 @@ PortletURL redirectURL = renderResponse.createRenderURL();
 redirectURL.setParameter("mvcPath", "/view.jsp");
 %>
 
-<liferay-ui:icon-menu cssClass="lfr-asset-actions" direction="left-side" icon="<%= StringPool.BLANK %>" markupView="lexicon" message="<%= StringPool.BLANK %>" showExpanded="<%= (row == null) %>">
+<liferay-ui:icon-menu
+	cssClass="lfr-asset-actions"
+	direction="left-side"
+	icon="<%= StringPool.BLANK %>"
+	markupView="lexicon"
+	message="<%= StringPool.BLANK %>"
+	showExpanded="<%= (row == null) %>"
+>
 	<c:if test="<%= !workflowTask.isCompleted() && workflowTaskDisplayContext.isAssignedToUser(workflowTask) %>">
 
 		<%
@@ -150,7 +157,8 @@ redirectURL.setParameter("mvcPath", "/view.jsp");
 				{
 					dialog: {
 						destroyOnHide: true,
-						height: 340,
+						height: 380,
+						resizable: false,
 						width: 720
 					},
 					id: '<portlet:namespace />assignToDialog',
@@ -170,7 +178,8 @@ redirectURL.setParameter("mvcPath", "/view.jsp");
 				{
 					dialog: {
 						destroyOnHide: true,
-						height: 430,
+						height: 470,
+						resizable: false,
 						width: 720
 					},
 					id: '<portlet:namespace />assignToDialog',

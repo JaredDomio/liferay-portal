@@ -14,22 +14,31 @@
 
 package com.liferay.apio.architect.functional;
 
+import static com.liferay.apio.architect.test.util.result.TryMatchers.aFailTry;
+import static com.liferay.apio.architect.test.util.result.TryMatchers.aSuccessTry;
+import static com.liferay.apio.architect.test.util.result.TryMatchers.aTryWithValueThat;
+
+import static com.spotify.hamcrest.optional.OptionalMatchers.emptyOptional;
+import static com.spotify.hamcrest.optional.OptionalMatchers.optionalWithValue;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 import com.liferay.apio.architect.exception.FalsePredicateException;
-import com.liferay.apio.architect.test.result.TryMatchers;
 
 import java.io.Closeable;
 import java.io.IOException;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.Is;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,9 +87,7 @@ public class TryTest {
 	}
 
 	@Test
-	public void testInvokingFallibleWithResourcesWithExceptionCreatesFailure()
-		throws Exception {
-
+	public void testInvokingFallibleWithResourcesWithExceptionCreatesFailure() {
 		Try<String> stringTry = Try.fromFallibleWithResources(
 			() -> () -> {
 			},
@@ -88,19 +95,17 @@ public class TryTest {
 				throw new IllegalArgumentException();
 			});
 
-		MatcherAssert.assertThat(stringTry, Is.is(TryMatchers.aFailTry()));
+		assertThat(stringTry, is(aFailTry()));
 	}
 
 	@Test
-	public void testInvokingFallibleWithResourcesWithValueCreatesSuccess()
-		throws Exception {
-
+	public void testInvokingFallibleWithResourcesWithValueCreatesSuccess() {
 		Try<String> stringTry = Try.fromFallibleWithResources(
 			() -> () -> {
 			},
 			__ -> "Live long");
 
-		MatcherAssert.assertThat(stringTry, Is.is(TryMatchers.aSuccessTry()));
+		assertThat(stringTry, is(aSuccessTry()));
 	}
 
 	@Parameters(method = FAIL)
@@ -130,9 +135,9 @@ public class TryTest {
 	public void testInvokingFilterOnSuccessWithValidPredicateReturnsValue(
 		Try<String> stringTry) {
 
-		MatcherAssert.assertThat(
+		assertThat(
 			stringTry.filter(string -> string.startsWith("Live")),
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("Live long"))));
+			is(aTryWithValueThat(equalTo("Live long"))));
 	}
 
 	@Parameters(method = FAIL)
@@ -142,7 +147,7 @@ public class TryTest {
 
 		Integer integer = stringTry.fold(exception -> 3, string -> 5);
 
-		assertThat(integer, is(equalTo(3)));
+		assertThat(integer, is(3));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -152,7 +157,7 @@ public class TryTest {
 
 		Integer integer = stringTry.fold(exception -> 3, string -> 5);
 
-		assertThat(integer, is(equalTo(5)));
+		assertThat(integer, is(5));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -171,7 +176,7 @@ public class TryTest {
 				throw new IllegalArgumentException();
 			});
 
-		assertThat(integer, is(equalTo(3)));
+		assertThat(integer, is(3));
 	}
 
 	@Test
@@ -181,14 +186,39 @@ public class TryTest {
 				throw new IllegalArgumentException();
 			});
 
-		MatcherAssert.assertThat(stringTry, Is.is(TryMatchers.aFailTry()));
+		assertThat(stringTry, is(aFailTry()));
 	}
 
 	@Test
 	public void testInvokingFromFallibleWithValueCreatesSuccess() {
 		Try<String> stringTry = Try.fromFallible(() -> "Live long");
 
-		MatcherAssert.assertThat(stringTry, Is.is(TryMatchers.aSuccessTry()));
+		assertThat(stringTry, is(aSuccessTry()));
+	}
+
+	@Test
+	public void testInvokingFromOptionalCreatesFailureFromEmptyOptional() {
+		Try<Integer> integerTry = Try.fromOptional(
+			Optional::empty, () -> new IllegalArgumentException("Apio"));
+
+		assertThat(integerTry.isFailure(), is(true));
+
+		integerTry.ifFailure(
+			exception -> {
+				assertThat(
+					exception.getClass(), is(IllegalArgumentException.class));
+
+				assertThat(exception.getMessage(), is("Apio"));
+			});
+	}
+
+	@Test
+	public void testInvokingFromOptionalCreatesSuccessFromValueOptional() {
+		Try<Integer> integerTry = Try.fromOptional(
+			() -> Optional.of(42), Exception::new);
+
+		assertThat(integerTry.isSuccess(), is(true));
+		assertThat(integerTry.getUnchecked(), is(42));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -196,7 +226,7 @@ public class TryTest {
 	public void testInvokingGetOnSuccessShouldReturnValue(Try<String> stringTry)
 		throws Exception {
 
-		assertThat(stringTry.get(), is(equalTo("Live long")));
+		assertThat(stringTry.get(), is("Live long"));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -206,7 +236,56 @@ public class TryTest {
 
 		Try.Success success = (Try.Success)stringTry;
 
-		assertThat(success.getValue(), is(equalTo("Live long")));
+		assertThat(success.getValue(), is("Live long"));
+	}
+
+	@Parameters(method = FAIL)
+	@Test(expected = IllegalArgumentException.class)
+	public void testInvokingIfFailureWithFailureInvokesConsumer(
+			Try<String> stringTry)
+		throws Exception {
+
+		List<Exception> list = new ArrayList<>();
+
+		stringTry.ifFailure(list::add);
+
+		throw list.get(0);
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingIfFailureWithSuccessDoesNotInvokeConsumer(
+		Try<String> stringTry) {
+
+		List<Exception> list = new ArrayList<>();
+
+		stringTry.ifFailure(list::add);
+
+		assertThat(list.isEmpty(), is(true));
+	}
+
+	@Parameters(method = FAIL)
+	@Test
+	public void testInvokingIfSuccessWithFailureDoesNotInvokeConsumer(
+		Try<String> stringTry) {
+
+		List<String> list = new ArrayList<>();
+
+		stringTry.ifSuccess(list::add);
+
+		assertThat(list.isEmpty(), is(true));
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingIfSuccessWithSuccessInvokesConsumer(
+		Try<String> stringTry) {
+
+		List<String> list = new ArrayList<>();
+
+		stringTry.ifSuccess(list::add);
+
+		assertThat(list.get(0), is("Live long"));
 	}
 
 	@Parameters(method = FAIL)
@@ -214,7 +293,7 @@ public class TryTest {
 	public void testInvokingIsFailureOnFailureReturnsTrue(
 		Try<String> stringTry) {
 
-		assertThat(stringTry.isFailure(), is(equalTo(true)));
+		assertThat(stringTry.isFailure(), is(true));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -222,7 +301,7 @@ public class TryTest {
 	public void testInvokingIsFailureOnSuccessReturnsFalse(
 		Try<String> stringTry) {
 
-		assertThat(stringTry.isFailure(), is(equalTo(false)));
+		assertThat(stringTry.isFailure(), is(false));
 	}
 
 	@Parameters(method = FAIL)
@@ -230,7 +309,7 @@ public class TryTest {
 	public void testInvokingIsSuccessOnFailureReturnsFalse(
 		Try<String> stringTry) {
 
-		assertThat(stringTry.isSuccess(), is(equalTo(false)));
+		assertThat(stringTry.isSuccess(), is(false));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -238,7 +317,7 @@ public class TryTest {
 	public void testInvokingIsSuccessOnSuccessReturnsFalse(
 		Try<String> stringTry) {
 
-		assertThat(stringTry.isSuccess(), is(equalTo(true)));
+		assertThat(stringTry.isSuccess(), is(true));
 	}
 
 	@Parameters(method = FAIL)
@@ -268,9 +347,9 @@ public class TryTest {
 	public void testInvokingMapFailMatchingOnSuccessShouldReturnValue(
 		Try<String> stringTry) {
 
-		MatcherAssert.assertThat(
+		assertThat(
 			stringTry.mapFailMatching(RuntimeException.class, IOException::new),
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("Live long"))));
+			is(aTryWithValueThat(equalTo("Live long"))));
 	}
 
 	@Parameters(method = FAIL)
@@ -289,9 +368,49 @@ public class TryTest {
 	public void testInvokingMapFailOnSuccessShouldReturnValue(
 		Try<String> stringTry) {
 
-		MatcherAssert.assertThat(
+		assertThat(
 			stringTry.mapFail(__ -> new IOException()),
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("Live long"))));
+			is(aTryWithValueThat(equalTo("Live long"))));
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingMapOptionalCreatesFailureWithEmptyOptional(
+		Try<String> stringTry) {
+
+		Try<String> newStringTry1 = stringTry.mapOptional(
+			__ -> Optional.empty(), () -> new IllegalArgumentException("Apio"));
+
+		assertThat(newStringTry1.isFailure(), is(true));
+
+		newStringTry1.ifFailure(
+			exception -> {
+				assertThat(
+					exception.getClass(), is(IllegalArgumentException.class));
+
+				assertThat(exception.getMessage(), is("Apio"));
+			});
+
+		Try<String> newStringTry2 = stringTry.mapOptional(
+			__ -> Optional.empty());
+
+		assertThat(newStringTry2.isFailure(), is(true));
+
+		newStringTry2.ifFailure(
+			exception -> assertThat(
+				exception.getClass(), is(NoSuchElementException.class)));
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingMapOptionalCreatesSuccessFromValueOptional(
+		Try<String> stringTry) {
+
+		Try<String> newStringTry = stringTry.mapOptional(
+			string -> Optional.of(string + " and prosper"), Exception::new);
+
+		assertThat(newStringTry.isSuccess(), is(true));
+		assertThat(newStringTry.getUnchecked(), is("Live long and prosper"));
 	}
 
 	@Parameters(method = FAIL)
@@ -299,9 +418,7 @@ public class TryTest {
 	public void testInvokingOrElseGetOnFailureShouldReturnValue(
 		Try<String> stringTry) {
 
-		assertThat(
-			stringTry.orElseGet(() -> "and prosper"),
-			is(equalTo("and prosper")));
+		assertThat(stringTry.orElseGet(() -> "and prosper"), is("and prosper"));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -309,8 +426,7 @@ public class TryTest {
 	public void testInvokingOrElseGetOnSuccessShouldReturnPreviousValue(
 		Try<String> stringTry) {
 
-		assertThat(
-			stringTry.orElseGet(() -> "and prosper"), is(equalTo("Live long")));
+		assertThat(stringTry.orElseGet(() -> "and prosper"), is("Live long"));
 	}
 
 	@Parameters(method = FAIL)
@@ -318,7 +434,7 @@ public class TryTest {
 	public void testInvokingOrElseOnFailureShouldReturnValue(
 		Try<String> stringTry) {
 
-		assertThat(stringTry.orElse("and prosper"), is(equalTo("and prosper")));
+		assertThat(stringTry.orElse("and prosper"), is("and prosper"));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -326,7 +442,7 @@ public class TryTest {
 	public void testInvokingOrElseOnSuccessShouldReturnPreviousValue(
 		Try<String> stringTry) {
 
-		assertThat(stringTry.orElse("and prosper"), is(equalTo("Live long")));
+		assertThat(stringTry.orElse("and prosper"), is("Live long"));
 	}
 
 	@Parameters(method = FAIL)
@@ -344,13 +460,76 @@ public class TryTest {
 
 		assertThat(
 			stringTry.orElseThrow(UnsupportedOperationException::new),
-			is(equalTo("Live long")));
+			is("Live long"));
+	}
+
+	@Parameters(method = FAIL)
+	@Test
+	public void testInvokingToOptionalWithFailureReturnEmptyOptional(
+		Try<String> stringTry) {
+
+		assertThat(stringTry.toOptional(), is(emptyOptional()));
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingToOptionalWithSuccessReturnValuedOptional(
+		Try<String> stringTry) {
+
+		assertThat(
+			stringTry.toOptional(),
+			is(optionalWithValue(equalTo("Live long"))));
+	}
+
+	@Parameters(method = FAIL)
+	@Test
+	public void testInvokingVoidFoldOnFailureExecutesFailureConsumer(
+		Try<String> stringTry) {
+
+		List<Integer> list = new ArrayList<>();
+
+		stringTry.voidFold(__ -> list.add(3), __ -> list.add(5));
+
+		assertThat(list, contains(3));
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingVoidFoldOnSuccessExecutesSuccessConsumer(
+		Try<String> stringTry) {
+
+		List<Integer> list = new ArrayList<>();
+
+		stringTry.voidFold(__ -> list.add(3), __ -> list.add(5));
+
+		assertThat(list, contains(5));
+	}
+
+	@Parameters(method = SUCCESS)
+	@Test
+	public void testInvokingVoidFoldOnSuccessWithFailureExecutesBothConsumers(
+		Try<String> stringTry) {
+
+		List<Integer> list = new ArrayList<>();
+
+		stringTry.voidFold(
+			exception -> {
+				assertThat(
+					exception, is(instanceOf(IllegalArgumentException.class)));
+
+				list.add(3);
+			},
+			__ -> {
+				throw new IllegalArgumentException();
+			});
+
+		assertThat(list, contains(3));
 	}
 
 	@Parameters(method = FAIL)
 	@Test
 	public void testOnFailureShouldBeFailure(Try<String> stringTry) {
-		MatcherAssert.assertThat(stringTry, Is.is(TryMatchers.aFailTry()));
+		assertThat(stringTry, is(aFailTry()));
 	}
 
 	@Test(expected = RuntimeException.class)
@@ -384,7 +563,7 @@ public class TryTest {
 		Try<String> newTry = stringTry.flatMap(
 			string -> Try.success(string + " and prosper"));
 
-		MatcherAssert.assertThat(newTry, Is.is(TryMatchers.aFailTry()));
+		assertThat(newTry, is(aFailTry()));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -395,11 +574,8 @@ public class TryTest {
 		Try<String> newTry = stringTry.flatMap(
 			string -> Try.success(string + " and prosper"));
 
-		MatcherAssert.assertThat(
-			newTry,
-			Is.is(
-				TryMatchers.aTryWithValueThat(
-					equalTo("Live long and prosper"))));
+		assertThat(
+			newTry, is(aTryWithValueThat(equalTo("Live long and prosper"))));
 	}
 
 	@Parameters(method = FAIL)
@@ -409,7 +585,7 @@ public class TryTest {
 
 		Try<String> newTry = stringTry.map(string -> string + " and prosper");
 
-		MatcherAssert.assertThat(newTry, Is.is(TryMatchers.aFailTry()));
+		assertThat(newTry, is(aFailTry()));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -419,11 +595,8 @@ public class TryTest {
 
 		Try<String> newTry = stringTry.map(string -> string + " and prosper");
 
-		MatcherAssert.assertThat(
-			newTry,
-			Is.is(
-				TryMatchers.aTryWithValueThat(
-					equalTo("Live long and prosper"))));
+		assertThat(
+			newTry, is(aTryWithValueThat(equalTo("Live long and prosper"))));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -484,22 +657,21 @@ public class TryTest {
 	public void testOnRecoveringWithFailureOnSuccessShouldReturnFirstValue(
 		Try<String> stringTry) {
 
-		MatcherAssert.assertThat(
+		assertThat(
 			stringTry.recoverWith(__ -> Try.fail(new Exception())),
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("Live long"))));
+			is(aTryWithValueThat(equalTo("Live long"))));
 	}
 
 	@Parameters(method = FAIL)
 	@Test
 	public void testOnRecoveringWithShouldHavePreviousExceptionAsParameter(
-			Try<String> stringTry)
-		throws Exception {
+		Try<String> stringTry) {
 
 		Try.Failure failure = (Try.Failure)stringTry;
 
 		stringTry.recoverWith(
 			exception -> {
-				assertThat(failure.getException(), is(equalTo(exception)));
+				assertThat(failure.getException(), is(exception));
 
 				return Try.success("and prosper");
 			});
@@ -510,9 +682,9 @@ public class TryTest {
 	public void testOnRecoveringWithSuccessOnFailureShouldReturnNewValue(
 		Try<String> stringTry) {
 
-		MatcherAssert.assertThat(
+		assertThat(
 			stringTry.recoverWith(__ -> Try.fromFallible(() -> "and prosper")),
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("and prosper"))));
+			is(aTryWithValueThat(equalTo("and prosper"))));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -520,9 +692,9 @@ public class TryTest {
 	public void testOnRecoveringWithSuccessOnSuccessShouldReturnFirstValue(
 		Try<String> stringTry) {
 
-		MatcherAssert.assertThat(
+		assertThat(
 			stringTry.recoverWith(__ -> Try.fromFallible(() -> "and prosper")),
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("Live long"))));
+			is(aTryWithValueThat(equalTo("Live long"))));
 	}
 
 	@Parameters(method = FAIL)
@@ -532,7 +704,7 @@ public class TryTest {
 
 		String string = stringTry.recover(__ -> "and prosper");
 
-		assertThat(string, is(equalTo("and prosper")));
+		assertThat(string, is("and prosper"));
 	}
 
 	@Parameters(method = SUCCESS)
@@ -542,21 +714,19 @@ public class TryTest {
 
 		String string = stringTry.recover(__ -> "and prosper");
 
-		assertThat(string, is(equalTo("Live long")));
+		assertThat(string, is("Live long"));
 	}
 
 	@Parameters(method = SUCCESS)
 	@Test
 	public void testOnSuccessShouldBeSuccess(Try<String> stringTry) {
-		MatcherAssert.assertThat(stringTry, Is.is(TryMatchers.aSuccessTry()));
+		assertThat(stringTry, is(aSuccessTry()));
 	}
 
 	@Parameters(method = SUCCESS)
 	@Test
 	public void testOnSuccessShouldGetValue(Try<String> stringTry) {
-		MatcherAssert.assertThat(
-			stringTry,
-			Is.is(TryMatchers.aTryWithValueThat(equalTo("Live long"))));
+		assertThat(stringTry, is(aTryWithValueThat(equalTo("Live long"))));
 	}
 
 }

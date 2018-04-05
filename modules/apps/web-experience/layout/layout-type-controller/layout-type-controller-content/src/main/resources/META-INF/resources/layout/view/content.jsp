@@ -17,29 +17,35 @@
 <%@ include file="/layout/view/init.jsp" %>
 
 <%
-String randomNamespace = PortalUtil.generateRandomKey(request, "layout_type_controller_content_page") + StringPool.UNDERLINE;
+String ppid = ParamUtil.getString(request, "p_p_id");
 
-for (LayoutPageTemplateFragment layoutPageTemplateFragment : layoutPageTemplateFragments) {
-	String layoutPageTemplateFragmentNamespace = randomNamespace + layoutPageTemplateFragment.getPosition();
+if ((themeDisplay.isStatePopUp() || themeDisplay.isWidget() || layoutTypePortlet.hasStateMax()) && Validator.isNotNull(ppid)) {
+	String templateId = null;
+	String templateContent = null;
+	String langType = null;
+
+	if (themeDisplay.isStatePopUp() || themeDisplay.isWidget()) {
+		templateId = theme.getThemeId() + LayoutTemplateConstants.STANDARD_SEPARATOR + "pop_up";
+		templateContent = LayoutTemplateLocalServiceUtil.getContent("pop_up", true, theme.getThemeId());
+		langType = LayoutTemplateLocalServiceUtil.getLangType("pop_up", true, theme.getThemeId());
+	}
+	else {
+		ppid = StringUtil.split(layoutTypePortlet.getStateMax())[0];
+
+		templateId = theme.getThemeId() + LayoutTemplateConstants.STANDARD_SEPARATOR + "max";
+		templateContent = LayoutTemplateLocalServiceUtil.getContent("max", true, theme.getThemeId());
+		langType = LayoutTemplateLocalServiceUtil.getLangType("max", true, theme.getThemeId());
+	}
+
+	if (Validator.isNotNull(templateContent)) {
+		RuntimePageUtil.processTemplate(request, response, ppid, new StringTemplateResource(templateId, templateContent), langType);
+	}
+}
+else {
+	ContentLayoutTypeControllerDisplayContext contentLayoutTypeControllerDisplayContext = new ContentLayoutTypeControllerDisplayContext(request, response);
 %>
 
-	<liferay-util:html-top outputKey="<%= layoutPageTemplateFragmentNamespace %>">
-		<style type="text/css">
-			<%= layoutPageTemplateFragment.getCss() %>
-		</style>
-	</liferay-util:html-top>
-
-	<div id="<%= layoutPageTemplateFragmentNamespace %>">
-		<%= layoutPageTemplateFragment.getHtml() %>
-	</div>
-
-	<aui:script>
-		(function() {
-		var fragment = document.getElementById("<%= layoutPageTemplateFragmentNamespace %>");
-
-		<%= layoutPageTemplateFragment.getJs() %>
-		}());
-	</aui:script>
+	<%= contentLayoutTypeControllerDisplayContext.getRenderedContent() %>
 
 <%
 }

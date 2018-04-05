@@ -16,12 +16,13 @@
 
 <%@ include file="/display/init.jsp" %>
 
-<liferay-util:dynamic-include key="com.liferay.dynamic.data.mapping.form.web#/display/view.jsp#pre" />
-
 <%
 String redirect = ParamUtil.getString(request, "redirect", currentURL);
 
 long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
+
+String languageId = LanguageUtil.getLanguageId(request);
+Locale displayLocale = LocaleUtil.fromLanguageId(languageId);
 %>
 
 <c:choose>
@@ -44,15 +45,19 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 				<div class="portlet-forms">
 					<div class="ddm-form-basic-info">
 						<div class="container-fluid-1280">
-							<h1 class="ddm-form-name"><%= GetterUtil.getString(title.getString(locale), title.getString(title.getDefaultLocale())) %></h1>
+							<h1 class="ddm-form-name"><%= GetterUtil.getString(title.getString(displayLocale), title.getString(title.getDefaultLocale())) %></h1>
 
-							<h5 class="ddm-form-description"><%= GetterUtil.getString(body.getString(locale), body.getString(body.getDefaultLocale())) %></h5>
+							<h5 class="ddm-form-description"><%= GetterUtil.getString(body.getString(displayLocale), body.getString(body.getDefaultLocale())) %></h5>
 						</div>
 					</div>
 				</div>
 			</c:when>
 			<c:when test="<%= ddmFormDisplayContext.isFormAvailable() %>">
 				<portlet:actionURL name="addFormInstanceRecord" var="addFormInstanceRecordActionURL" />
+
+				<%
+				DDMFormInstance formInstance = ddmFormDisplayContext.getFormInstance();
+				%>
 
 				<div class="portlet-forms">
 					<aui:form action="<%= addFormInstanceRecordActionURL %>" data-DDMFormInstanceId="<%= formInstanceId %>" method="post" name="fm">
@@ -65,12 +70,9 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 							<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 						</c:if>
 
-						<%
-						DDMFormInstance formInstance = ddmFormDisplayContext.getFormInstance();
-						%>
-
 						<aui:input name="groupId" type="hidden" value="<%= formInstance.getGroupId() %>" />
 						<aui:input name="formInstanceId" type="hidden" value="<%= formInstance.getFormInstanceId() %>" />
+						<aui:input name="languageId" type="hidden" value="<%= languageId %>" />
 						<aui:input name="workflowAction" type="hidden" value="<%= WorkflowConstants.ACTION_PUBLISH %>" />
 
 						<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
@@ -101,12 +103,24 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 
 						<liferay-ui:error-principal />
 
+						<c:if test="<%= ddmFormDisplayContext.isFormShared() %>">
+							<div class="container-fluid-1280">
+								<div class="locale-actions">
+									<liferay-ui:language
+										formAction="<%= currentURL %>"
+										languageId="<%= languageId %>"
+										languageIds="<%= ddmFormDisplayContext.getAvailableLanguageIds() %>"
+									/>
+								</div>
+							</div>
+						</c:if>
+
 						<div class="ddm-form-basic-info">
 							<div class="container-fluid-1280">
-								<h1 class="ddm-form-name"><%= formInstance.getName(locale) %></h1>
+								<h1 class="ddm-form-name"><%= formInstance.getName(displayLocale) %></h1>
 
 								<%
-								String description = formInstance.getDescription(locale);
+								String description = formInstance.getDescription(displayLocale);
 								%>
 
 								<c:if test="<%= Validator.isNotNull(description) %>">
@@ -136,12 +150,17 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 
 					Liferay.on('destroyPortlet', <portlet:namespace />clearPortletHandlers);
 
+					<c:if test="<%= ddmFormDisplayContext.isFormShared() %>">
+						document.title = '<%= HtmlUtil.escape(formInstance.getName(displayLocale)) %>';
+					</c:if>
+
 					<c:choose>
 						<c:when test="<%= ddmFormDisplayContext.isAutosaveEnabled() %>">
 							var <portlet:namespace />form;
 
 							<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="addFormInstanceRecord" var="autoSaveFormInstanceRecordURL">
 								<portlet:param name="autoSave" value="<%= Boolean.TRUE.toString() %>" />
+								<portlet:param name="preview" value="<%= String.valueOf(ddmFormDisplayContext.isPreview()) %>" />
 							</liferay-portlet:resourceURL>
 
 							function <portlet:namespace />autoSave() {
@@ -165,19 +184,32 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 								<portlet:namespace />intervalId = setInterval(<portlet:namespace />autoSave, 60000);
 							}
 
+							function <portlet:namespace />fireFormView() {
+								Liferay.fire('ddmFormView', {formId: <%= formInstanceId %>});
+
+								Liferay.fire("ddmFormPageShow", {
+									formId: <%= formInstanceId %>,
+									page: 1
+								});
+							}
+
 							<portlet:namespace />form = Liferay.component('<%= ddmFormDisplayContext.getContainerId() %>DDMForm');
 
 							if (<portlet:namespace />form) {
 								<portlet:namespace />startAutoSave();
+
+								<portlet:namespace />fireFormView();
 							}
 							else {
 								Liferay.after(
-									Liferay.namespace('DDM').Form + ':render',
+									'<%= ddmFormDisplayContext.getContainerId() %>DDMForm:render',
 									function(event) {
-										<portlet:namespace />form = Liferay.component(event.containerId + 'DDMForm');
+										<portlet:namespace />form = Liferay.component('<%= ddmFormDisplayContext.getContainerId() %>DDMForm');
 
 										if (<portlet:namespace />form) {
 											<portlet:namespace />startAutoSave();
+
+											<portlet:namespace />fireFormView();
 										}
 									}
 								);
@@ -229,5 +261,3 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 		</div>
 	</div>
 </c:if>
-
-<liferay-util:dynamic-include key="com.liferay.dynamic.data.mapping.form.web#/display/view.jsp#post" />

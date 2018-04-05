@@ -11,6 +11,8 @@ targetCompatibility = "1.8"
 buildPluginDescriptor {
 	configurationScopeMapping "mavenCompile", Conf2ScopeMappingContainer.COMPILE
 
+	dependsOn ":apps:foundation:frontend-css:frontend-css-common:install"
+	dependsOn ":util:sass-compiler-api:install"
 	dependsOn ":util:sass-compiler-jni:install"
 	dependsOn ":util:sass-compiler-ruby:install"
 
@@ -24,6 +26,14 @@ buildPluginDescriptor {
 	goalPrefix = "css-builder"
 }
 
+configurations {
+	mavenCompile {
+		extendsFrom compile
+	}
+
+	mavenDistribution
+}
+
 copyPortalCommonCSSJar {
 	from configurations.portalCommonCSS
 	into new File(buildDir, "portal-common-css-jar")
@@ -31,14 +41,6 @@ copyPortalCommonCSSJar {
 	rename {
 		"com.liferay.frontend.css.common.jar"
 	}
-}
-
-configurations {
-	mavenCompile {
-		extendsFrom compile
-	}
-
-	mavenDistribution
 }
 
 dependencies {

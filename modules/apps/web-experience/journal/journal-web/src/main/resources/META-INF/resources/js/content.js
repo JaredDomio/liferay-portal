@@ -1,23 +1,17 @@
 AUI.add(
 	'liferay-journal-content',
 	function(A) {
-		var AArray = A.Array;
-
 		var Lang = A.Lang;
 
 		var STR_CLICK = 'click';
 
 		var STR_DDM = 'ddm';
 
-		var STR_DESCRIPTION_INPUT_LOCALIZED = 'descriptionInputLocalized';
-
 		var STR_SELECT_STRUCTURE = 'selectStructure';
 
 		var STR_SELECT_TEMPLATE = 'selectTemplate';
 
 		var STR_STRINGS = 'strings';
-
-		var STR_TITLE_INPUT_LOCALIZED = 'titleInputLocalized';
 
 		var STR_URLS = 'urls';
 
@@ -29,9 +23,6 @@ AUI.add(
 					ddm: {
 						validator: Lang.isObject,
 						value: {}
-					},
-
-					descriptionInputLocalized: {
 					},
 
 					editStructure: {
@@ -61,9 +52,6 @@ AUI.add(
 						}
 					},
 
-					titleInputLocalized: {
-					},
-
 					urls: {
 						validator: Lang.isObject,
 						value: {}
@@ -81,73 +69,12 @@ AUI.add(
 						var instance = this;
 
 						instance._bindUI();
-
-						instance._bindTranslationManager();
-
-						instance._renderUI();
 					},
 
 					destructor: function() {
 						var instance = this;
 
 						(new A.EventHandle(instance._eventHandles)).detach();
-					},
-
-					_afterDeletingAvailableLocale: function(event) {
-						var instance = this;
-
-						var descriptionInputLocalized = instance.get(STR_DESCRIPTION_INPUT_LOCALIZED);
-
-						var titleInputLocalized = instance.get(STR_TITLE_INPUT_LOCALIZED);
-
-						var locale = event.locale;
-
-						descriptionInputLocalized.removeInputLanguage(locale);
-
-						titleInputLocalized.removeInputLanguage(locale);
-					},
-
-					_afterEditingLocaleChange: function(event) {
-						var instance = this;
-
-						var descriptionInputLocalized = instance.get(STR_DESCRIPTION_INPUT_LOCALIZED);
-
-						var titleInputLocalized = instance.get(STR_TITLE_INPUT_LOCALIZED);
-
-						var items = descriptionInputLocalized.get('items');
-
-						var editingLocale = event.newVal;
-
-						var selectedIndex = items.indexOf(editingLocale);
-
-						descriptionInputLocalized.set('selected', selectedIndex);
-						descriptionInputLocalized.selectFlag(editingLocale);
-
-						titleInputLocalized.set('selected', selectedIndex);
-						titleInputLocalized.selectFlag(editingLocale);
-					},
-
-					_bindTranslationManager: function() {
-						var instance = this;
-
-						var eventHandles = instance._eventHandles;
-
-						var translationManager = Liferay.component(instance.ns('translationManager'));
-
-						if (translationManager) {
-							eventHandles.push(
-								translationManager.on('deleteAvailableLocale', instance._afterDeletingAvailableLocale.bind(instance))
-							);
-
-							eventHandles.push(
-								translationManager.on('editingLocaleChange', instance._afterEditingLocaleChange.bind(instance))
-							);
-						}
-						else {
-							eventHandles.push(
-								Liferay.once(instance.ns('translationManager:registered'), instance._bindTranslationManager.bind(instance))
-							);
-						}
 					},
 
 					_bindUI: function() {
@@ -316,13 +243,6 @@ AUI.add(
 								submitForm(form, null, false, false);
 							}
 						);
-					},
-
-					_renderUI: function() {
-						var instance = this;
-
-						instance.get(STR_DESCRIPTION_INPUT_LOCALIZED).render();
-						instance.get(STR_TITLE_INPUT_LOCALIZED).render();
 					}
 				}
 			}

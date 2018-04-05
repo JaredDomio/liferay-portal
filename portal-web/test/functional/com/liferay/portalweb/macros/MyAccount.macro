@@ -6,9 +6,7 @@
 			<var name="name" value="${organizationName}" />
 		</execute>
 
-		<execute macro="Button#clickSave" />
-
-		<execute macro="Alert#viewSuccessMessage" />
+		<execute macro="PortletEntry#save" />
 	</command>
 
 	<command name="changeUserLanguage">
@@ -55,7 +53,7 @@
 
 	<command name="editPasswordInvalidCP">
 		<execute macro="Panel#expandPanel">
-			<var name="panelHeading" value="Password" />
+			<var name="panel" value="Password" />
 		</execute>
 
 		<if>
@@ -89,8 +87,14 @@
 	</command>
 
 	<command name="view">
-		<for list="Password,Organizations,Sites,User Groups,Roles,Categorization" param="key_panelHeading">
-			<execute function="AssertElementPresent" locator1="Panel#PANEL_HEADING_COLLAPSED" />
-		</for>
+		<execute function="AssertElementPresent" locator1="UsersAndOrganizationsEditUser#CATEGORIZATION_LABEL" />
+
+		<execute macro="UserNavigator#gotoOrganizations" />
+
+		<execute macro="UserNavigator#gotoMemberships" />
+
+		<execute macro="UserNavigator#gotoRoles" />
+
+		<execute macro="UserNavigator#gotoPassword" />
 	</command>
 </definition>

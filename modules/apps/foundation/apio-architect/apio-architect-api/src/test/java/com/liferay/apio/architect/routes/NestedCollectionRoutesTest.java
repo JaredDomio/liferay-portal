@@ -14,24 +14,26 @@
 
 package com.liferay.apio.architect.routes;
 
+import static com.liferay.apio.architect.operation.Method.POST;
 import static com.liferay.apio.architect.routes.RoutesTestUtil.FORM_BUILDER_FUNCTION;
 import static com.liferay.apio.architect.routes.RoutesTestUtil.PAGINATION;
-import static com.liferay.apio.architect.routes.RoutesTestUtil.PROVIDE_FUNCTION;
+import static com.liferay.apio.architect.routes.RoutesTestUtil.REQUEST_PROVIDE_FUNCTION;
+import static com.liferay.apio.architect.routes.RoutesTestUtil.getNestedCollectionPermissionFunction;
 
 import static com.spotify.hamcrest.optional.OptionalMatchers.emptyOptional;
 import static com.spotify.hamcrest.optional.OptionalMatchers.optionalWithValue;
 
-import static java.util.Collections.singletonMap;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.Is.is;
 
 import com.liferay.apio.architect.alias.routes.NestedCreateItemFunction;
 import com.liferay.apio.architect.alias.routes.NestedGetPageFunction;
-import com.liferay.apio.architect.error.ApioDeveloperError.MustUseSameIdentifier;
+import com.liferay.apio.architect.form.Body;
+import com.liferay.apio.architect.operation.Operation;
 import com.liferay.apio.architect.pagination.Page;
 import com.liferay.apio.architect.pagination.PageItems;
 import com.liferay.apio.architect.pagination.Pagination;
@@ -40,11 +42,11 @@ import com.liferay.apio.architect.single.model.SingleModel;
 import com.liferay.apio.architect.uri.Path;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -56,193 +58,145 @@ public class NestedCollectionRoutesTest {
 	@Test
 	public void testEmptyBuilderBuildsEmptyRoutes() {
 		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
+			"name", "nested", REQUEST_PROVIDE_FUNCTION,
+			__ -> {
+			});
 
-		NestedCollectionRoutes<String> nestedCollectionRoutes = builder.build();
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes =
+			builder.build();
 
-		Optional<NestedCreateItemFunction<String>>
-			nestedCreateItemFunctionOptional =
-				nestedCollectionRoutes.getNestedCreateItemFunctionOptional();
+		Optional<NestedCreateItemFunction<String, Long>> optional1 =
+			nestedCollectionRoutes.getNestedCreateItemFunctionOptional();
 
-		assertThat(nestedCreateItemFunctionOptional, is(emptyOptional()));
+		assertThat(optional1, is(emptyOptional()));
 
-		Optional<NestedGetPageFunction<String>> nestedGetPageFunctionOptional =
+		Optional<NestedGetPageFunction<String, Long>> optional2 =
 			nestedCollectionRoutes.getNestedGetPageFunctionOptional();
 
-		assertThat(nestedGetPageFunctionOptional, is(emptyOptional()));
+		assertThat(optional2, is(emptyOptional()));
 	}
 
 	@Test
 	public void testFiveParameterBuilderMethodsCreatesValidRoutes() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
+		Set<String> neededProviders = new TreeSet<>();
 
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
+		Builder<String, Long> builder = new Builder<>(
+			"name", "nested", REQUEST_PROVIDE_FUNCTION, neededProviders::add);
+
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes =
 			builder.addCreator(
 				this::_testAndReturnFourParameterCreatorRoute, String.class,
-				Long.class, Boolean.class, Integer.class, FORM_BUILDER_FUNCTION
+				Long.class, Boolean.class, Integer.class,
+				getNestedCollectionPermissionFunction(), FORM_BUILDER_FUNCTION
 			).addGetter(
 				this::_testAndReturnFourParameterGetterRoute, String.class,
 				Long.class, Boolean.class, Integer.class
 			).build();
 
-		_testNestedCollectionRoutes(nestedCollectionRoutes, 42L);
-	}
+		assertThat(
+			neededProviders,
+			contains(
+				Boolean.class.getName(), Integer.class.getName(),
+				Long.class.getName(), String.class.getName()));
 
-	@Test(expected = MustUseSameIdentifier.class)
-	public void testFiveParameterBuilderMethodsFailIfDifferentIdentifier() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
-
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
-			builder.addCreator(
-				this::_testAndReturnFourParameterCreatorRoute, String.class,
-				Long.class, Boolean.class, Integer.class, FORM_BUILDER_FUNCTION
-			).addGetter(
-				this::_testAndReturnFourParameterGetterRoute, String.class,
-				Long.class, Boolean.class, Integer.class
-			).build();
-
-		_testNestedCollectionRoutes(nestedCollectionRoutes, "Wrong");
+		_testNestedCollectionRoutes(nestedCollectionRoutes);
 	}
 
 	@Test
 	public void testFourParameterBuilderMethodsCreatesValidRoutes() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
+		Set<String> neededProviders = new TreeSet<>();
 
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
+		Builder<String, Long> builder = new Builder<>(
+			"name", "nested", REQUEST_PROVIDE_FUNCTION, neededProviders::add);
+
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes =
 			builder.addCreator(
 				this::_testAndReturnThreeParameterCreatorRoute, String.class,
-				Long.class, Boolean.class, FORM_BUILDER_FUNCTION
+				Long.class, Boolean.class,
+				getNestedCollectionPermissionFunction(), FORM_BUILDER_FUNCTION
 			).addGetter(
 				this::_testAndReturnThreeParameterGetterRoute, String.class,
 				Long.class, Boolean.class
 			).build();
 
-		_testNestedCollectionRoutes(nestedCollectionRoutes, 42L);
-	}
+		assertThat(
+			neededProviders,
+			contains(
+				Boolean.class.getName(), Long.class.getName(),
+				String.class.getName()));
 
-	@Test(expected = MustUseSameIdentifier.class)
-	public void testFourParameterBuilderMethodsFailIfDifferentIdentifier() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
-
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
-			builder.addCreator(
-				this::_testAndReturnThreeParameterCreatorRoute, String.class,
-				Long.class, Boolean.class, FORM_BUILDER_FUNCTION
-			).addGetter(
-				this::_testAndReturnThreeParameterGetterRoute, String.class,
-				Long.class, Boolean.class
-			).build();
-
-		_testNestedCollectionRoutes(nestedCollectionRoutes, "Wrong");
+		_testNestedCollectionRoutes(nestedCollectionRoutes);
 	}
 
 	@Test
 	public void testOneParameterBuilderMethodsCreatesValidRoutes() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
+		Set<String> neededProviders = new TreeSet<>();
 
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
+		Builder<String, Long> builder = new Builder<>(
+			"name", "nested", REQUEST_PROVIDE_FUNCTION, neededProviders::add);
+
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes =
 			builder.addCreator(
 				this::_testAndReturnNoParameterCreatorRoute,
-				FORM_BUILDER_FUNCTION
+				getNestedCollectionPermissionFunction(), FORM_BUILDER_FUNCTION
 			).addGetter(
 				this::_testAndReturnNoParameterGetterRoute
 			).build();
 
-		_testNestedCollectionRoutes(nestedCollectionRoutes, 42L);
-	}
+		assertThat(neededProviders.size(), is(0));
 
-	@Test(expected = MustUseSameIdentifier.class)
-	public void testOneParameterBuilderMethodsFailIfDifferentIdentifier() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
-
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
-			builder.addCreator(
-				this::_testAndReturnNoParameterCreatorRoute,
-				FORM_BUILDER_FUNCTION
-			).addGetter(
-				this::_testAndReturnNoParameterGetterRoute
-			).build();
-
-		_testNestedCollectionRoutes(nestedCollectionRoutes, "Wrong");
+		_testNestedCollectionRoutes(nestedCollectionRoutes);
 	}
 
 	@Test
 	public void testThreeParameterBuilderMethodsCreatesValidRoutes() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
+		Set<String> neededProviders = new TreeSet<>();
 
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
+		Builder<String, Long> builder = new Builder<>(
+			"name", "nested", REQUEST_PROVIDE_FUNCTION, neededProviders::add);
+
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes =
 			builder.addCreator(
 				this::_testAndReturnTwoParameterCreatorRoute, String.class,
-				Long.class, FORM_BUILDER_FUNCTION
+				Long.class, getNestedCollectionPermissionFunction(),
+				FORM_BUILDER_FUNCTION
 			).addGetter(
 				this::_testAndReturnTwoParameterGetterRoute, String.class,
 				Long.class
 			).build();
 
-		_testNestedCollectionRoutes(nestedCollectionRoutes, 42L);
-	}
+		assertThat(
+			neededProviders,
+			contains(Long.class.getName(), String.class.getName()));
 
-	@Test(expected = MustUseSameIdentifier.class)
-	public void testThreeParameterBuilderMethodsFailIfDifferentIdentifier() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
-
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
-			builder.addCreator(
-				this::_testAndReturnTwoParameterCreatorRoute, String.class,
-				Long.class, FORM_BUILDER_FUNCTION
-			).addGetter(
-				this::_testAndReturnTwoParameterGetterRoute, String.class,
-				Long.class
-			).build();
-
-		_testNestedCollectionRoutes(nestedCollectionRoutes, "Wrong");
+		_testNestedCollectionRoutes(nestedCollectionRoutes);
 	}
 
 	@Test
 	public void testTwoParameterBuilderMethodsCreatesValidRoutes() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
+		Set<String> neededProviders = new TreeSet<>();
 
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
+		Builder<String, Long> builder = new Builder<>(
+			"name", "nested", REQUEST_PROVIDE_FUNCTION, neededProviders::add);
+
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes =
 			builder.addCreator(
 				this::_testAndReturnOneParameterCreatorRoute, String.class,
-				FORM_BUILDER_FUNCTION
+				getNestedCollectionPermissionFunction(), FORM_BUILDER_FUNCTION
 			).addGetter(
 				this::_testAndReturnOneParameterGetterRoute, String.class
 			).build();
 
-		_testNestedCollectionRoutes(nestedCollectionRoutes, 42L);
-	}
+		assertThat(neededProviders, contains(String.class.getName()));
 
-	@Test(expected = MustUseSameIdentifier.class)
-	public void testTwoParameterBuilderMethodsFailIfDifferentIdentifier() {
-		Builder<String, Long> builder = new Builder<>(
-			String.class, Long.class, PROVIDE_FUNCTION);
-
-		NestedCollectionRoutes<String> nestedCollectionRoutes =
-			builder.addCreator(
-				this::_testAndReturnOneParameterCreatorRoute, String.class,
-				FORM_BUILDER_FUNCTION
-			).addGetter(
-				this::_testAndReturnOneParameterGetterRoute, String.class
-			).build();
-
-		_testNestedCollectionRoutes(nestedCollectionRoutes, "Wrong");
+		_testNestedCollectionRoutes(nestedCollectionRoutes);
 	}
 
 	private String _testAndReturnFourParameterCreatorRoute(
 		Long identifier, Map<String, Object> body, String string, Long aLong,
 		Boolean aBoolean, Integer integer) {
 
-		assertThat(integer, is(equalTo(2017)));
+		assertThat(integer, is(2017));
 
 		return _testAndReturnThreeParameterCreatorRoute(
 			identifier, body, string, aLong, aBoolean);
@@ -252,7 +206,7 @@ public class NestedCollectionRoutesTest {
 		Pagination pagination, Long identifier, String string, Long aLong,
 		Boolean aBoolean, Integer integer) {
 
-		assertThat(integer, is(equalTo(2017)));
+		assertThat(integer, is(2017));
 
 		return _testAndReturnThreeParameterGetterRoute(
 			pagination, identifier, string, aLong, aBoolean);
@@ -261,8 +215,11 @@ public class NestedCollectionRoutesTest {
 	private String _testAndReturnNoParameterCreatorRoute(
 		Long identifier, Map<String, Object> body) {
 
-		assertThat(identifier, is(equalTo(42L)));
-		assertThat(body, is(equalTo(_body)));
+		assertThat(identifier, is(42L));
+
+		Optional<String> optional = _body.getValueOptional("key");
+
+		assertThat(body.get("key"), is(optional.get()));
 
 		return "Apio";
 	}
@@ -270,8 +227,8 @@ public class NestedCollectionRoutesTest {
 	private PageItems<String> _testAndReturnNoParameterGetterRoute(
 		Pagination pagination, Long identifier) {
 
-		assertThat(identifier, is(equalTo(42L)));
-		assertThat(pagination, is(equalTo(PAGINATION)));
+		assertThat(identifier, is(42L));
+		assertThat(pagination, is(PAGINATION));
 
 		return new PageItems<>(Collections.singletonList("Apio"), 1);
 	}
@@ -279,7 +236,7 @@ public class NestedCollectionRoutesTest {
 	private String _testAndReturnOneParameterCreatorRoute(
 		Long identifier, Map<String, Object> body, String string) {
 
-		assertThat(string, is(equalTo("Apio")));
+		assertThat(string, is("Apio"));
 
 		return _testAndReturnNoParameterCreatorRoute(identifier, body);
 	}
@@ -287,7 +244,7 @@ public class NestedCollectionRoutesTest {
 	private PageItems<String> _testAndReturnOneParameterGetterRoute(
 		Pagination pagination, Long identifier, String string) {
 
-		assertThat(string, is(equalTo("Apio")));
+		assertThat(string, is("Apio"));
 
 		return _testAndReturnNoParameterGetterRoute(pagination, identifier);
 	}
@@ -315,7 +272,7 @@ public class NestedCollectionRoutesTest {
 	private String _testAndReturnTwoParameterCreatorRoute(
 		Long identifier, Map<String, Object> body, String string, Long aLong) {
 
-		assertThat(aLong, is(equalTo(42L)));
+		assertThat(aLong, is(42L));
 
 		return _testAndReturnOneParameterCreatorRoute(identifier, body, string);
 	}
@@ -323,58 +280,75 @@ public class NestedCollectionRoutesTest {
 	private PageItems<String> _testAndReturnTwoParameterGetterRoute(
 		Pagination pagination, Long identifier, String string, Long aLong) {
 
-		assertThat(aLong, is(equalTo(42L)));
+		assertThat(aLong, is(42L));
 
 		return _testAndReturnOneParameterGetterRoute(
 			pagination, identifier, string);
 	}
 
 	private void _testNestedCollectionRoutes(
-		NestedCollectionRoutes<String> nestedCollectionRoutes,
-		Object identifier) {
+		NestedCollectionRoutes<String, Long> nestedCollectionRoutes) {
 
-		Optional<NestedCreateItemFunction<String>>
-			nestedCreateItemFunctionOptional =
-				nestedCollectionRoutes.getNestedCreateItemFunctionOptional();
+		Optional<NestedCollectionRoutes<String, Long>> optional = Optional.of(
+			nestedCollectionRoutes);
 
-		Function<HttpServletRequest, Function<Object,
-			Function<Map<String, Object>, SingleModel<String>>>>
-				nestedCreateItemFunction =
-					nestedCreateItemFunctionOptional.get();
+		Map map = optional.flatMap(
+			NestedCollectionRoutes::getFormOptional
+		).map(
+			form -> {
+				assertThat(form.id, is("c/name/nested"));
 
-		SingleModel<String> singleModel = nestedCreateItemFunction.apply(
+				return (Map)form.get(_body);
+			}
+		).get();
+
+		Optional<String> valueOptional = _body.getValueOptional("key");
+
+		assertThat(map.get("key"), is(valueOptional.get()));
+
+		SingleModel<String> singleModel = optional.flatMap(
+			NestedCollectionRoutes::getNestedCreateItemFunctionOptional
+		).get(
+		).apply(
 			null
 		).apply(
-			identifier
+			42L
 		).apply(
 			_body
-		);
+		).getUnchecked();
 
-		assertThat(singleModel.getModelClass(), is(equalTo(String.class)));
-		assertThat(singleModel.getModel(), is(equalTo("Apio")));
-
-		Optional<NestedGetPageFunction<String>> nestedGetPageFunctionOptional =
-			nestedCollectionRoutes.getNestedGetPageFunctionOptional();
-
-		NestedGetPageFunction<String> nestedGetPageFunction =
-			nestedGetPageFunctionOptional.get();
+		assertThat(singleModel.getResourceName(), is("nested"));
+		assertThat(singleModel.getModel(), is("Apio"));
 
 		Path path = new Path("name", "42");
 
-		Page<String> page = nestedGetPageFunction.apply(
+		Page<String> page = optional.flatMap(
+			NestedCollectionRoutes::getNestedGetPageFunctionOptional
+		).get(
+		).apply(
 			null
 		).apply(
 			path
 		).apply(
-			identifier
-		);
+			42L
+		).getUnchecked();
 
 		assertThat(page.getItems(), hasSize(1));
 		assertThat(page.getItems(), hasItem("Apio"));
 		assertThat(page.getPathOptional(), optionalWithValue(equalTo(path)));
-		assertThat(page.getTotalCount(), is(equalTo(1)));
+		assertThat(page.getTotalCount(), is(1));
+
+		List<Operation> operations = page.getOperations();
+
+		assertThat(operations, hasSize(1));
+
+		Operation secondOperation = operations.get(0);
+
+		assertThat(secondOperation.getFormOptional(), is(optionalWithValue()));
+		assertThat(secondOperation.method, is(POST));
+		assertThat(secondOperation.name, is("name/nested/create"));
 	}
 
-	private final Map<String, Object> _body = singletonMap("key", "value");
+	private final Body _body = __ -> Optional.of("Apio");
 
 }

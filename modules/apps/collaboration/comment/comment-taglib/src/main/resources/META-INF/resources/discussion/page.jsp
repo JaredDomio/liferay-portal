@@ -125,18 +125,26 @@ CommentSectionDisplayContext commentSectionDisplayContext = CommentDisplayContex
 										<div class="panel-body">
 											<div class="lfr-discussion-details">
 												<liferay-ui:user-portrait
-													cssClass="user-icon-lg"
 													user="<%= user %>"
 												/>
 											</div>
 
 											<div class="lfr-discussion-body">
-												<liferay-ui:input-editor configKey="commentEditor" contents="" editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.discussion.jsp") %>' name='<%= randomNamespace + "postReplyBody0" %>' onChangeMethod='<%= randomNamespace + "0ReplyOnChange" %>' placeholder="type-your-comment-here" showSource="<%= false %>" skipEditorLoading="<%= skipEditorLoading %>" />
+												<liferay-ui:input-editor
+													configKey="commentEditor"
+													contents=""
+													editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.discussion.jsp") %>'
+													name='<%= randomNamespace + "postReplyBody0" %>'
+													onChangeMethod='<%= randomNamespace + "0ReplyOnChange" %>'
+													placeholder="type-your-comment-here"
+													showSource="<%= false %>"
+													skipEditorLoading="<%= skipEditorLoading %>"
+												/>
 
 												<aui:input name="postReplyBody0" type="hidden" />
 
 												<aui:button-row>
-													<aui:button cssClass="btn-comment btn-lg btn-primary" disabled="<%= true %>" id='<%= randomNamespace + "postReplyButton0" %>' onClick='<%= randomNamespace + "postReply(0);" %>' value='<%= themeDisplay.isSignedIn() ? "reply" : "reply-as" %>' />
+													<aui:button cssClass="btn-comment btn-primary" disabled="<%= true %>" id='<%= randomNamespace + "postReplyButton0" %>' onClick='<%= randomNamespace + "postReply(0);" %>' value='<%= themeDisplay.isSignedIn() ? "reply" : "reply-as" %>' />
 												</aui:button-row>
 											</div>
 										</div>
@@ -309,6 +317,16 @@ CommentSectionDisplayContext commentSectionDisplayContext = CommentDisplayContex
 									}
 								}
 							);
+						}
+					);
+
+					Liferay.fire(
+						'messagePosted',
+						{
+							className: '<%= discussionTaglibHelper.getClassName() %>',
+							classPK: '<%= discussionTaglibHelper.getClassPK() %>',
+							commentId: response.commentId,
+							text: AUI.$('input[name^="<%= namespace %>body"]').val()
 						}
 					);
 

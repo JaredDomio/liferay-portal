@@ -19,10 +19,10 @@ import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.util.BaseDDMDisplay;
 import com.liferay.dynamic.data.mapping.util.DDMDisplay;
 import com.liferay.dynamic.data.mapping.util.DDMDisplayTabItem;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.PortletKeys;
-import com.liferay.portal.kernel.util.StringPool;
 
 import java.util.Arrays;
 import java.util.List;
@@ -95,7 +95,7 @@ public class DLDDMDisplay extends BaseDDMDisplay {
 
 	@Override
 	public boolean isShowBackURLInTitleBar() {
-		return false;
+		return true;
 	}
 
 	private final DDMDisplayTabItem _defaultTabItem =

@@ -8,7 +8,7 @@ AUI.add(
 				popover: {
 					zIndex: Liferay.zIndex.TOOLTIP
 				},
-				trigger: '.liferay-ddm-form-field-date .trigger'
+				trigger: '.liferay-ddm-form-field-date .form-control'
 			}
 		);
 
@@ -96,13 +96,7 @@ AUI.add(
 
 						var triggerNode;
 
-						if (instance.get('readOnly')) {
-							triggerNode = container.one('.trigger-readonly');
-						}
-						else {
-							triggerNode = container.one('.trigger');
-						}
-
+						triggerNode = container.one('.form-control');
 						return triggerNode;
 					},
 
@@ -125,9 +119,9 @@ AUI.add(
 
 						var container = instance.get('container');
 
-						var inputGroup = container.one('.input-group-container');
+						var formGroup = container.one('.form-group');
 
-						inputGroup.insert(container.one('.form-feedback-indicator'), 'after');
+						formGroup.append(container.one('.form-feedback-item'));
 					},
 
 					_afterSelectionChange: function(event) {
@@ -146,6 +140,8 @@ AUI.add(
 
 							instance.validate();
 						}
+
+						instance._fireStartedFillingEvent();
 					},
 
 					_onActiveInputChange: function(event) {

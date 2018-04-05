@@ -28,6 +28,8 @@ String currentTab = ParamUtil.getString(request, "currentTab", "forms");
 >
 	<liferay-frontend:management-bar-buttons>
 		<liferay-util:include page="/admin/display_style_buttons.jsp" servletContext="<%= application %>" />
+
+		<liferay-util:include page="/admin/display_add_menu.jsp" servletContext="<%= application %>" />
 	</liferay-frontend:management-bar-buttons>
 
 	<liferay-frontend:management-bar-filters>
@@ -42,15 +44,33 @@ String currentTab = ParamUtil.getString(request, "currentTab", "forms");
 			orderColumns='<%= new String[] {"create-date", "modified-date", "name"} %>'
 			portletURL="<%= portletURL %>"
 		/>
+
+		<li>
+			<c:if test="<%= ddmFormAdminDisplayContext.isShowSearch() %>">
+				<aui:form action="<%= ddmFormAdminDisplayContext.getPortletURL() %>" method="post" name="fm1">
+					<liferay-ui:input-search
+						markupView="lexicon"
+					/>
+				</aui:form>
+			</c:if>
+		</li>
 	</liferay-frontend:management-bar-filters>
 
 	<liferay-frontend:management-bar-action-buttons>
 		<c:choose>
 			<c:when test='<%= currentTab.equals("forms") %>'>
-				<liferay-frontend:management-bar-button href='<%= "javascript:" + renderResponse.getNamespace() + "deleteFormInstances();" %>' icon="trash" label="delete" />
+				<liferay-frontend:management-bar-button
+					href='<%= "javascript:" + renderResponse.getNamespace() + "deleteFormInstances();" %>'
+					icon="trash"
+					label="delete"
+				/>
 			</c:when>
-			<c:when test='<%= currentTab.equals("field-set") %>'>
-				<liferay-frontend:management-bar-button href='<%= "javascript:" + renderResponse.getNamespace() + "deleteStructures();" %>' icon="trash" label="delete" />
+			<c:when test='<%= currentTab.equals("element-set") %>'>
+				<liferay-frontend:management-bar-button
+					href='<%= "javascript:" + renderResponse.getNamespace() + "deleteStructures();" %>'
+					icon="trash"
+					label="delete"
+				/>
 			</c:when>
 		</c:choose>
 	</liferay-frontend:management-bar-action-buttons>
@@ -73,7 +93,7 @@ String currentTab = ParamUtil.getString(request, "currentTab", "forms");
 			}
 		</aui:script>
 	</c:when>
-	<c:when test='<%= currentTab.equals("field-set") %>'>
+	<c:when test='<%= currentTab.equals("element-set") %>'>
 		<aui:script>
 			function <portlet:namespace />deleteStructures() {
 				if (confirm('<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this") %>')) {
@@ -84,7 +104,7 @@ String currentTab = ParamUtil.getString(request, "currentTab", "forms");
 					form.attr('method', 'post');
 					form.fm('deleteStructureIds').val(Liferay.Util.listCheckedExcept(searchContainer, '<portlet:namespace />allRowIds'));
 
-					submitForm(form, '<portlet:actionURL name="deleteStructure"><portlet:param name="mvcPath" value="/admin/view.jsp" /><portlet:param name="currentTab" value="field-set" /><portlet:param name="redirect" value="<%= currentURL %>" /></portlet:actionURL>');
+					submitForm(form, '<portlet:actionURL name="deleteStructure"><portlet:param name="mvcPath" value="/admin/view.jsp" /><portlet:param name="currentTab" value="element-set" /><portlet:param name="redirect" value="<%= currentURL %>" /></portlet:actionURL>');
 				}
 			}
 		</aui:script>

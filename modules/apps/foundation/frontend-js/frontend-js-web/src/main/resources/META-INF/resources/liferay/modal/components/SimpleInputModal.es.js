@@ -1,45 +1,74 @@
-import 'metal-modal';
+import {isString} from 'metal';
 import Component from 'metal-component';
 import Soy from 'metal-soy';
 import {Config} from 'metal-state';
 
+import '../../compat/modal/Modal.es';
 import templates from './SimpleInputModal.soy';
 
 /**
  * SimpleInputModal
+ * @review
  */
+
 class SimpleInputModal extends Component {
+
 	/**
 	 * @inheritDoc
+	 * @review
 	 */
+
 	attached() {
 		this.addListener('formSubmit', this._defaultFormSubmit.bind(this), true);
+	}
+
+	/**
+	 * @inheritDoc
+	 * @review
+	 */
+
+	rendered() {
+		requestAnimationFrame(
+			() => {
+				this.refs.modal.refs.mainField.focus();
+			}
+		);
 	}
 
 	/**
 	 * Default event listener for form submission.
 	 * @param {Event} event
 	 * @private
+	 * @review
 	 */
-	_defaultFormSubmit(event) {
-		fetch(this.formSubmitURL, {
-			body: new FormData(event.form),
-			credentials: 'include',
-			method: 'POST',
-		})
-			.then(response => response.json())
-			.then(responseContent => {
-				this._loadingResponse = false;
 
-				if (responseContent.error) {
-					this._handleFormError(responseContent);
-				} else {
-					this._handleFormSuccess(responseContent);
+	_defaultFormSubmit(event) {
+		fetch(
+			this.formSubmitURL,
+			{
+				body: new FormData(event.form),
+				credentials: 'include',
+				method: 'POST'
+			}
+		)
+			.then(response => response.json())
+			.then(
+				responseContent => {
+					this._loadingResponse = false;
+
+					if (responseContent.error) {
+						this._handleFormError(responseContent);
+					}
+					else {
+						this._handleFormSuccess(responseContent);
+					}
 				}
-			})
-			.catch(response => {
-				this._handleFormError(response);
-			});
+			)
+			.catch(
+				response => {
+					this._handleFormError(response);
+				}
+			);
 
 		this._loadingResponse = true;
 	}
@@ -48,7 +77,9 @@ class SimpleInputModal extends Component {
 	 * Callback executed when the SimpleInputModal cancel button
 	 * has been clicked.
 	 * @private
+	 * @review
 	 */
+
 	_handleCancelButtonClick() {
 		this.emit('cancelButtonClicked');
 	}
@@ -59,13 +90,18 @@ class SimpleInputModal extends Component {
 	 * It emits a formError event with the errorMessage received.
 	 * @param {{error: string}} responseContent
 	 * @private
+	 * @review
 	 */
+
 	_handleFormError(responseContent) {
 		this._errorMessage = responseContent.error || '';
 
-		this.emit('formError', {
-			errorMessage: this._errorMessage,
-		});
+		this.emit(
+			'formError',
+			{
+				errorMessage: this._errorMessage
+			}
+		);
 	}
 
 	/**
@@ -74,13 +110,18 @@ class SimpleInputModal extends Component {
 	 * using a fetch request.
 	 * @param {Event} event
 	 * @private
+	 * @review
 	 */
+
 	_handleFormSubmit(event) {
 		event.preventDefault();
 
-		this.emit('formSubmit', {
-			form: event.delegateTarget,
-		});
+		this.emit(
+			'formSubmit',
+			{
+				form: this.refs.modal.refs.form
+			}
+		);
 	}
 
 	/**
@@ -89,17 +130,24 @@ class SimpleInputModal extends Component {
 	 * It emits a formSuccess event with the redirectURL received.
 	 * @param {{redirectURL: string}} responseContent
 	 * @private
+	 * @review
 	 */
+
 	_handleFormSuccess(responseContent) {
-		this.emit('formSuccess', {
-			redirectURL: responseContent.redirectURL || '',
-		});
+		this.emit(
+			'formSuccess',
+			{
+				redirectURL: responseContent.redirectURL || ''
+			}
+		);
 	}
 
 	/**
 	 * Callback executed when the modal visibility property changes
 	 * @private
+	 * @review
 	 */
+
 	_handleModalVisibleChanged() {
 		this.emit('dialogHidden');
 	}
@@ -107,26 +155,41 @@ class SimpleInputModal extends Component {
 
 /**
  * State definition.
- * @type {!Object}
+ * @review
  * @static
+ * @type {!Object}
  */
+
 SimpleInputModal.STATE = {
+
 	/**
 	 * Label for the optional checkbox
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
-	checkboxFieldLabel: Config.string().value(''),
+
+	checkboxFieldLabel: Config
+		.setter(
+			(checkboxFieldLabel) => {
+				return (isString(checkboxFieldLabel) && checkboxFieldLabel) ?
+					Soy.toIncDom(checkboxFieldLabel) : '';
+			}
+		)
+		.string()
+		.value(''),
 
 	/**
 	 * Name for the optional checkbox
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
+
 	checkboxFieldName: Config.string().value(''),
 
 	/**
@@ -134,8 +197,10 @@ SimpleInputModal.STATE = {
 	 * @default false
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {boolean}
 	 */
+
 	checkboxFieldValue: Config.bool().value(false),
 
 	/**
@@ -143,8 +208,10 @@ SimpleInputModal.STATE = {
 	 * @default undefined
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {!string}
 	 */
+
 	dialogTitle: Config.string().required(),
 
 	/**
@@ -152,8 +219,10 @@ SimpleInputModal.STATE = {
 	 * @default undefined
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {!string}
 	 */
+
 	formSubmitURL: Config.string().required(),
 
 	/**
@@ -161,8 +230,10 @@ SimpleInputModal.STATE = {
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
+
 	id: Config.string().value(''),
 
 	/**
@@ -170,8 +241,10 @@ SimpleInputModal.STATE = {
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
+
 	idFieldName: Config.string().value(''),
 
 	/**
@@ -179,8 +252,10 @@ SimpleInputModal.STATE = {
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
+
 	idFieldValue: Config.string().value(''),
 
 	/**
@@ -188,17 +263,24 @@ SimpleInputModal.STATE = {
 	 * @default undefined
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {!string}
 	 */
-	mainFieldLabel: Config.string().required(),
+
+	mainFieldLabel: Config
+		.setter((mainFieldLabel) => Soy.toIncDom(mainFieldLabel))
+		.string()
+		.required(),
 
 	/**
 	 * Name for the main field
 	 * @default undefined
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {!string}
 	 */
+
 	mainFieldName: Config.string().required(),
 
 	/**
@@ -206,8 +288,10 @@ SimpleInputModal.STATE = {
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
+
 	mainFieldPlaceholder: Config.string().value(''),
 
 	/**
@@ -215,8 +299,10 @@ SimpleInputModal.STATE = {
 	 * @default ''
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {string}
 	 */
+
 	mainFieldValue: Config.string().value(''),
 
 	/**
@@ -224,8 +310,10 @@ SimpleInputModal.STATE = {
 	 * @default undefined
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {!string}
 	 */
+
 	namespace: Config.string().required(),
 
 	/**
@@ -233,8 +321,10 @@ SimpleInputModal.STATE = {
 	 * @default undefined
 	 * @instance
 	 * @memberOf SimpleInputModal
+	 * @review
 	 * @type {!string}
 	 */
+
 	spritemap: Config.string().required(),
 
 	/**
@@ -243,8 +333,10 @@ SimpleInputModal.STATE = {
 	 * @instance
 	 * @memberOf SimpleInputModal
 	 * @private
+	 * @review
 	 * @type {!string}
 	 */
+
 	_errorMessage: Config.string()
 		.internal()
 		.value(''),
@@ -256,11 +348,13 @@ SimpleInputModal.STATE = {
 	 * @instance
 	 * @memberOf SimpleInputModal
 	 * @private
+	 * @review
 	 * @type {boolean}
 	 */
+
 	_loadingResponse: Config.bool()
 		.internal()
-		.value(false),
+		.value(false)
 };
 
 Soy.register(SimpleInputModal, templates);

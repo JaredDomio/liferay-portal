@@ -77,7 +77,13 @@ if (comment instanceof WorkflowableComment) {
 				<aui:workflow-status model="<%= CommentConstants.getDiscussionClass() %>" status="<%= workflowableComment.getStatus() %>" />
 			</c:if>
 
-			<liferay-ui:input-editor configKey="commentEditor" contents="<%= comment.getBody() %>" editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.discussion.jsp") %>' name="bodyEditor" showSource="<%= false %>" />
+			<liferay-ui:input-editor
+				configKey="commentEditor"
+				contents="<%= comment.getBody() %>"
+				editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.discussion.jsp") %>'
+				name="bodyEditor"
+				showSource="<%= false %>"
+			/>
 
 			<aui:input name="body" type="hidden" value="<%= comment.getBody() %>" />
 		</aui:fieldset>
@@ -100,7 +106,7 @@ if (comment instanceof WorkflowableComment) {
 
 		<aui:button-row>
 			<c:if test="<%= (comment == null) || !approved %>">
-				<aui:button cssClass="btn-lg" type="submit" />
+				<aui:button type="submit" />
 			</c:if>
 
 			<c:if test="<%= (workflowableComment != null) && approved && WorkflowDefinitionLinkLocalServiceUtil.hasWorkflowDefinitionLink(workflowableComment.getCompanyId(), workflowableComment.getGroupId(), CommentConstants.getDiscussionClassName()) %>">
@@ -109,7 +115,7 @@ if (comment instanceof WorkflowableComment) {
 				</div>
 			</c:if>
 
-			<aui:button cssClass="btn-lg" href="<%= redirect %>" type="cancel" />
+			<aui:button href="<%= redirect %>" type="cancel" />
 		</aui:button-row>
 	</aui:form>
 </div>

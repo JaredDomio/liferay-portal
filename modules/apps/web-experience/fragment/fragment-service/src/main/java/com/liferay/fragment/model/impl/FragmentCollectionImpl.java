@@ -14,8 +14,40 @@
 
 package com.liferay.fragment.model.impl;
 
+import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.zip.ZipWriter;
+
+import java.util.List;
+
 /**
  * @author Eudaldo Alonso
  */
 public class FragmentCollectionImpl extends FragmentCollectionBaseImpl {
+
+	@Override
+	public void populateZipWriter(ZipWriter zipWriter) throws Exception {
+		String path = StringPool.SLASH + getFragmentCollectionKey();
+
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
+		jsonObject.put("description", getDescription());
+		jsonObject.put("name", getName());
+
+		zipWriter.addEntry(path + "/collection.json", jsonObject.toString());
+
+		List<FragmentEntry> fragmentEntries =
+			FragmentEntryLocalServiceUtil.getFragmentEntries(
+				getFragmentCollectionId(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS);
+
+		for (FragmentEntry fragmentEntry : fragmentEntries) {
+			fragmentEntry.populateZipWriter(zipWriter, path);
+		}
+	}
+
 }

@@ -19,6 +19,7 @@ import aQute.bnd.annotation.ProviderType;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.fragment.service.persistence.FragmentCollectionPersistence;
+import com.liferay.fragment.service.persistence.FragmentEntryLinkPersistence;
 import com.liferay.fragment.service.persistence.FragmentEntryPersistence;
 
 import com.liferay.portal.kernel.bean.BeanReference;
@@ -506,6 +507,44 @@ public abstract class FragmentEntryLocalServiceBaseImpl
 		this.userPersistence = userPersistence;
 	}
 
+	/**
+	 * Returns the fragment entry link local service.
+	 *
+	 * @return the fragment entry link local service
+	 */
+	public com.liferay.fragment.service.FragmentEntryLinkLocalService getFragmentEntryLinkLocalService() {
+		return fragmentEntryLinkLocalService;
+	}
+
+	/**
+	 * Sets the fragment entry link local service.
+	 *
+	 * @param fragmentEntryLinkLocalService the fragment entry link local service
+	 */
+	public void setFragmentEntryLinkLocalService(
+		com.liferay.fragment.service.FragmentEntryLinkLocalService fragmentEntryLinkLocalService) {
+		this.fragmentEntryLinkLocalService = fragmentEntryLinkLocalService;
+	}
+
+	/**
+	 * Returns the fragment entry link persistence.
+	 *
+	 * @return the fragment entry link persistence
+	 */
+	public FragmentEntryLinkPersistence getFragmentEntryLinkPersistence() {
+		return fragmentEntryLinkPersistence;
+	}
+
+	/**
+	 * Sets the fragment entry link persistence.
+	 *
+	 * @param fragmentEntryLinkPersistence the fragment entry link persistence
+	 */
+	public void setFragmentEntryLinkPersistence(
+		FragmentEntryLinkPersistence fragmentEntryLinkPersistence) {
+		this.fragmentEntryLinkPersistence = fragmentEntryLinkPersistence;
+	}
+
 	public void afterPropertiesSet() {
 		persistedModelLocalServiceRegistry.register("com.liferay.fragment.model.FragmentEntry",
 			fragmentEntryLocalService);
@@ -578,6 +617,10 @@ public abstract class FragmentEntryLocalServiceBaseImpl
 	protected com.liferay.portal.kernel.service.UserLocalService userLocalService;
 	@ServiceReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
+	@BeanReference(type = com.liferay.fragment.service.FragmentEntryLinkLocalService.class)
+	protected com.liferay.fragment.service.FragmentEntryLinkLocalService fragmentEntryLinkLocalService;
+	@BeanReference(type = FragmentEntryLinkPersistence.class)
+	protected FragmentEntryLinkPersistence fragmentEntryLinkPersistence;
 	@ServiceReference(type = PersistedModelLocalServiceRegistry.class)
 	protected PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry;
 }
